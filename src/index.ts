@@ -2,7 +2,7 @@
 
 import chalk from "chalk";
 import inquirer from "inquirer";
-import simpleGit, { SimpleGit } from "simple-git";
+import simpleGit, { type SimpleGit } from "simple-git";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
@@ -10,46 +10,46 @@ import { hideBin } from "yargs/helpers";
 const git: SimpleGit = simpleGit();
 
 async function switchBranch(remote = false) {
-  const branchType = remote ? "remote" : "local";
-  try {
-    const branches = remote
-      ? (await git.branch(["-r"])).all.map(
-          (branch) => branch.split("origin/")[1]
-        )
-      : (await git.branchLocal()).all;
+	const branchType = remote ? "remote" : "local";
+	try {
+		const branches = remote
+			? (await git.branch(["-r"])).all.map(
+					(branch) => branch.split("origin/")[1],
+				)
+			: (await git.branchLocal()).all;
 
-    const { branch } = await inquirer.prompt([
-      {
-        type: "list",
-        name: "branch",
-        message: `Select a ${branchType} branch:`,
-        choices: branches,
-      },
-    ]);
+		const { branch } = await inquirer.prompt([
+			{
+				type: "list",
+				name: "branch",
+				message: `Select a ${branchType} branch:`,
+				choices: branches,
+			},
+		]);
 
-    await git.checkout(branch);
-    console.log(
-      chalk.greenBright(`Switched to ${branchType} branch '${branch}'`)
-    );
-  } catch (error) {
-    console.error(chalk.redBright(error));
-  }
+		await git.checkout(branch);
+		console.log(
+			chalk.greenBright(`Switched to ${branchType} branch '${branch}'`),
+		);
+	} catch (error) {
+		console.error(chalk.redBright(error));
+	}
 }
 
 yargs(hideBin(process.argv))
-  .command(
-    "$0 [-r]",
-    "Switch branches",
-    (yargs) => {
-      return yargs;
-    },
-    (argv) => {
-      switchBranch(argv.remote);
-    }
-  )
-  .option("remote", {
-    alias: "r",
-    type: "boolean",
-    description: "Fetch remote branches",
-  })
-  .parse();
+	.command(
+		"$0 [-r]",
+		"Switch branches",
+		(yargs) => {
+			return yargs;
+		},
+		(argv) => {
+			switchBranch(argv.remote);
+		},
+	)
+	.option("remote", {
+		alias: "r",
+		type: "boolean",
+		description: "Fetch remote branches",
+	})
+	.parse();
