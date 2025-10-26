@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
+import { checkbox, search, select } from "@inquirer/prompts";
 import chalk from "chalk";
-import inquirer from "inquirer";
 import simpleGit, { SimpleGit } from "simple-git";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
