@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { search, select } from "@inquirer/prompts";
+import { checkbox, search, select } from "@inquirer/prompts";
 import chalk from "chalk";
 import simpleGit, { type SimpleGit } from "simple-git";
 import yargs from "yargs";
@@ -12,6 +12,8 @@ const git: SimpleGit = simpleGit();
 async function switchBranch(
 	argv: yargs.Arguments<{
 		remote?: boolean;
+		delete?: boolean;
+		deleteForce?: boolean;
 		search?: boolean;
 	}>,
 ) {
@@ -22,6 +24,33 @@ async function switchBranch(
 					.map((branch) => branch.split("origin/")[1])
 					.filter((branch) => branch && branch !== "HEAD")
 			: (await git.branch(["--sort=-committerdate"])).all;
+
+		if (argv.delete || argv.deleteForce) {
+			if (argv.remote) {
+				console.error(
+					chalk.redBright("Deleting remote branches is not supported yet."),
+				);
+				return;
+			}
+
+			const selectedBranches = await checkbox<string>({
+				message: `Select ${branchType} branches to delete:`,
+				choices: branches,
+			});
+
+			if (selectedBranches.length === 0) {
+				console.log(chalk.yellow("No branches selected for deletion."));
+				return;
+			}
+
+			await git.deleteLocalBranches(selectedBranches, argv.deleteForce);
+			console.log(
+				chalk.greenBright(
+					`Deleted ${selectedBranches.length} branch${selectedBranches.length === 1 ? "" : "es"}: ${selectedBranches.join(", ")}`,
+				),
+			);
+			return;
+		}
 
 		const branch = argv.search
 			? await search<string>({
@@ -57,7 +86,7 @@ async function switchBranch(
 yargs(hideBin(process.argv))
 	.command(
 		"$0 [-r]",
-		"Git branch utilities - switch or search branches",
+		"Git branch utilities - switch, search, or delete branches",
 		(yargs) => yargs,
 		(argv) => switchBranch(argv),
 	)
@@ -65,6 +94,16 @@ yargs(hideBin(process.argv))
 		alias: "r",
 		type: "boolean",
 		description: "Fetch remote branches",
+	})
+	.option("delete", {
+		alias: "d",
+		type: "boolean",
+		description: "Delete branches",
+	})
+	.option("delete-force", {
+		alias: "D",
+		type: "boolean",
+		description: "Force delete branches",
 	})
 	.option("search", {
 		alias: "s",

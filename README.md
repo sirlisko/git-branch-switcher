@@ -1,15 +1,16 @@
 # git-branch-switcher
 
-A comprehensive CLI tool for git branch management with interactive prompts. Switch and search branches effortlessly. Say goodbye to remembering branch names and typing long `git checkout` commands!
+A comprehensive CLI tool for git branch management with interactive prompts. Switch, search, and delete branches effortlessly. Say goodbye to remembering branch names and typing long `git checkout` commands!
 
 ## Features
 
 - 🚀 Interactive branch selection with multiple interfaces
 - 🔍 Real-time branch search with filtering
-- 🌐 Support for both local and remote branches
+- 🗑️ Safe branch deletion with multi-select
 - 📅 Branches sorted by commit date (most recent first)
 - 🎨 Colorized output for better readability
 - ⚡ Fast and lightweight
+- 🛡️ Safety features (prevents remote branch deletion)
 - 🔧 Two convenient commands: `git-branch-switcher` and `br`
 
 ## Installation
@@ -58,6 +59,21 @@ br -s
 
 Use the search interface to filter branches in real-time as you type.
 
+### Delete local branches
+
+```bash
+git-branch-switcher --delete
+# or
+br -d
+
+# Force delete (for unmerged branches)
+git-branch-switcher --delete-force
+# or
+br -D
+```
+
+Select multiple local branches to delete. Remote branch deletion is blocked for safety.
+
 ### Combine options
 
 ```bash
@@ -75,6 +91,8 @@ git-branch-switcher [options]
 Options:
   -r, --remote          Work with remote branches instead of local ones
   -s, --search          Use search interface for branch filtering
+  -d, --delete          Delete selected branches (local only)
+  -D, --delete-force    Force delete selected branches (local only)
   -h, --help            Show help
   -v, --version         Show version number
 ```
