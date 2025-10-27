@@ -41,7 +41,7 @@
     "url": "https://github.com/sirlisko/git-branch-switcher/issues"
   },
   "dependencies": {
-    "@inquirer/prompts": "^9.2.12",
+    "@inquirer/prompts": "^7.9.0",
     "chalk": "^5.4.1",
     "simple-git": "^3.28.0",
     "yargs": "^18.0.0"
