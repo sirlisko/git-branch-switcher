@@ -1,12 +1,14 @@
 # git-branch-switcher
 
-A simple and intuitive CLI tool for switching between git branches with an interactive prompt. Say goodbye to remembering branch names and typing long `git checkout` commands!
+A comprehensive CLI tool for git branch management with interactive prompts. Switch and search branches effortlessly. Say goodbye to remembering branch names and typing long `git checkout` commands!
 
 ## Features
 
-- 🚀 Interactive branch selection with fuzzy search
+- 🚀 Interactive branch selection with multiple interfaces
+- 🔍 Real-time branch search with filtering
 - 🌐 Support for both local and remote branches
-- 🎨 Colorized output for better readability  
+- 📅 Branches sorted by commit date (most recent first)
+- 🎨 Colorized output for better readability
 - ⚡ Fast and lightweight
 - 🔧 Two convenient commands: `git-branch-switcher` and `br`
 
@@ -46,20 +48,40 @@ br -r
 
 This fetches and displays remote branches for checkout.
 
+### Search for branches
+
+```bash
+git-branch-switcher --search
+# or
+br -s
+```
+
+Use the search interface to filter branches in real-time as you type.
+
+### Combine options
+
+```bash
+# Search through remote branches
+br --remote --search
+
+# All available combinations work together
+```
+
 ### Command options
 
 ```bash
 git-branch-switcher [options]
 
 Options:
-  -r, --remote    Show remote branches instead of local ones
-  -h, --help      Show help
-  -v, --version   Show version number
+  -r, --remote          Work with remote branches instead of local ones
+  -s, --search          Use search interface for branch filtering
+  -h, --help            Show help
+  -v, --version         Show version number
 ```
 
 ## Requirements
 
-- Node.js 18 or higher
+- Node.js 18 or higher (22.3.0 recommended - see .nvmrc)
 - Git installed and configured
 - A git repository (local or cloned)
 
@@ -86,10 +108,10 @@ pnpm check      # Run linting and formatting checks
 ### Tech stack
 
 - **TypeScript** - Type-safe JavaScript
-- **simple-git** - Git operations
-- **inquirer** - Interactive CLI prompts
+- **simple-git** - Git operations (branch listing, checkout, deletion)
+- **@inquirer/prompts** - Modular interactive CLI prompts (select, search, checkbox)
 - **yargs** - Command line argument parsing
-- **chalk** - Terminal colors
+- **chalk** - Terminal colors and styling
 - **Biome** - Linting and formatting
 
 ## Contributing

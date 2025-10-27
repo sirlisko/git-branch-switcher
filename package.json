@@ -1,7 +1,7 @@
 {
   "name": "git-branch-switcher",
   "version": "0.1.0",
-  "description": "Easily switch between branches in your git repository.",
+  "description": "Git branch utilities - easily switch and search branches in your git repository.",
   "main": "dist/index.js",
   "files": [
     "/dist"
@@ -21,7 +21,10 @@
     "git",
     "branch",
     "switcher",
-    "cli"
+    "search",
+    "cli",
+    "interactive",
+    "utilities"
   ],
   "author": "Luca Lischetti <luca@sirlisko.com> (https://sirlisko.com/)",
   "bin": {
@@ -38,8 +41,8 @@
     "url": "https://github.com/sirlisko/git-branch-switcher/issues"
   },
   "dependencies": {
+    "@inquirer/prompts": "^7.9.0",
     "chalk": "^5.4.1",
-    "inquirer": "^9.2.12",
     "simple-git": "^3.28.0",
     "yargs": "^18.0.0"
   },
