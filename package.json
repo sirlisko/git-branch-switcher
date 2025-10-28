@@ -1,6 +1,6 @@
 {
   "name": "git-branch-switcher",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Git branch utilities - easily switch, search, and delete branches in your git repository.",
   "main": "dist/index.js",
   "files": [
