@@ -123,6 +123,15 @@ pnpm format     # Format code with Biome
 pnpm check      # Run linting and formatting checks
 ```
 
+### Releasing
+
+This project uses [Changesets](https://github.com/changesets/changesets) with automated publishing:
+
+1. Create a changeset: `pnpm changeset`
+2. Commit and open a PR to `main`
+3. After merging, GitHub Actions will create a "Version Packages" PR
+4. Merge the "Version Packages" PR to automatically publish to npm
+
 ### Tech stack
 
 - **TypeScript** - Type-safe JavaScript
