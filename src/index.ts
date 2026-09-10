@@ -2,11 +2,10 @@
 
 import { checkbox, search, select } from "@inquirer/prompts";
 import chalk from "chalk";
-import simpleGit, { type SimpleGit } from "simple-git";
+import { type SimpleGit, simpleGit } from "simple-git";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-//@ts-expect-error types are wrong
 const git: SimpleGit = simpleGit();
 
 async function switchBranch(
@@ -19,11 +18,24 @@ async function switchBranch(
 ) {
 	const branchType = argv.remote ? "remote" : "local";
 	try {
-		const branches = argv.remote
-			? (await git.branch(["-r", "--sort=-committerdate"])).all
-					.map((branch) => branch.split("origin/")[1])
-					.filter((branch) => branch && branch !== "HEAD")
-			: (await git.branch(["--sort=-committerdate"])).all;
+		let branches: string[];
+		let currentBranch: string | undefined;
+
+		if (argv.remote) {
+			const summary = await git.branch(["-r", "--sort=-committerdate"]);
+			branches = summary.all
+				.filter((branch) => !branch.includes("->"))
+				.map((branch) => branch.replace(/^[^/]+\//, ""));
+		} else {
+			const summary = await git.branch(["--sort=-committerdate"]);
+			branches = summary.all;
+			currentBranch = summary.current;
+		}
+
+		if (branches.length === 0) {
+			console.log(chalk.yellow(`No ${branchType} branches found.`));
+			return;
+		}
 
 		if (argv.delete || argv.deleteForce) {
 			if (argv.remote) {
@@ -33,9 +45,16 @@ async function switchBranch(
 				return;
 			}
 
+			const deletable = branches.filter((branch) => branch !== currentBranch);
+
+			if (deletable.length === 0) {
+				console.log(chalk.yellow("No branches available to delete."));
+				return;
+			}
+
 			const selectedBranches = await checkbox<string>({
 				message: `Select ${branchType} branches to delete:`,
-				choices: branches,
+				choices: deletable,
 			});
 
 			if (selectedBranches.length === 0) {
@@ -79,7 +98,9 @@ async function switchBranch(
 			console.log("bye 👋");
 			process.exit(0);
 		}
-		console.error(chalk.redBright(error));
+		console.error(
+			chalk.redBright(error instanceof Error ? error.message : error),
+		);
 	}
 }
 
