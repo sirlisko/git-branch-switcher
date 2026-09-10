@@ -28,6 +28,7 @@ async function switchBranch(
 		delete?: boolean;
 		deleteForce?: boolean;
 		search?: boolean;
+		verbose?: boolean;
 	}>,
 ) {
 	const branchType = argv.remote ? "remote" : "local";
@@ -55,6 +56,14 @@ async function switchBranch(
 			return;
 		}
 
+		const CANCEL = "__cancel__";
+		const toChoice = (branch: string) => ({
+			value: branch,
+			name:
+				branch === currentBranch ? chalk.dim(`${branch} (current)`) : branch,
+		});
+		const cancelChoice = { value: CANCEL, name: "↩ Cancel" };
+
 		if (argv.delete || argv.deleteForce) {
 			let deletable = branches.filter((branch) => branch !== currentBranch);
 
@@ -72,8 +81,13 @@ async function switchBranch(
 
 			const selectedBranches = await checkbox<string>({
 				message: `Select ${branchType} branches to delete:`,
-				choices: deletable,
+				choices: [...deletable.map(toChoice), cancelChoice],
 			});
+
+			if (selectedBranches.includes(CANCEL)) {
+				console.log(chalk.yellow("Cancelled."));
+				return;
+			}
 
 			if (selectedBranches.length === 0) {
 				console.log(chalk.yellow("No branches selected for deletion."));
@@ -103,7 +117,31 @@ async function switchBranch(
 				return;
 			}
 
-			await git.deleteLocalBranches(selectedBranches, argv.deleteForce);
+			try {
+				await git.deleteLocalBranches(selectedBranches, argv.deleteForce);
+			} catch (deleteError) {
+				const notMerged =
+					!argv.deleteForce &&
+					deleteError instanceof Error &&
+					/not fully merged/.test(deleteError.message);
+
+				if (!notMerged) {
+					throw deleteError;
+				}
+
+				const forceConfirmed = await confirm({
+					message: `${selectedBranches.length === 1 ? "That branch is" : "Some of those branches are"} not fully merged. Force delete anyway?`,
+					default: false,
+				});
+
+				if (!forceConfirmed) {
+					console.log(chalk.yellow("Aborted."));
+					return;
+				}
+
+				await git.deleteLocalBranches(selectedBranches, true);
+			}
+
 			console.log(
 				chalk.greenBright(
 					`Deleted ${selectedBranches.length} branch${selectedBranches.length === 1 ? "" : "es"}: ${selectedBranches.join(", ")}`,
@@ -116,16 +154,21 @@ async function switchBranch(
 			? await search<string>({
 					message: `Select a ${branchType} branch:`,
 					source: (term: string) => {
-						if (!term) {
-							return branches;
-						}
-						return branches.filter((branch) => branch.includes(term));
+						const filtered = term
+							? branches.filter((branch) => branch.includes(term))
+							: branches;
+						return [...filtered.map(toChoice), cancelChoice];
 					},
 				})
 			: await select<string>({
 					message: `Select a ${branchType} branch:`,
-					choices: branches,
+					choices: [...branches.map(toChoice), cancelChoice],
 				});
+
+		if (branch === CANCEL) {
+			console.log(chalk.yellow("Cancelled."));
+			return;
+		}
 
 		await git.checkout(branch);
 		console.log(
@@ -142,6 +185,9 @@ async function switchBranch(
 		console.error(
 			chalk.redBright(error instanceof Error ? error.message : error),
 		);
+		if (argv.verbose && error instanceof Error && error.stack) {
+			console.error(chalk.dim(error.stack));
+		}
 	}
 }
 
@@ -171,6 +217,11 @@ yargs(hideBin(process.argv))
 		alias: "s",
 		type: "boolean",
 		description: "Search branches",
+	})
+	.option("verbose", {
+		alias: "V",
+		type: "boolean",
+		description: "Show the full error stack trace on failure",
 	})
 	.usage("Usage: $0 [options] - branch utils tool")
 	.parse();
