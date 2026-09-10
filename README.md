@@ -6,11 +6,11 @@ A comprehensive CLI tool for git branch management with interactive prompts. Swi
 
 - 🚀 Interactive branch selection with multiple interfaces
 - 🔍 Real-time branch search with filtering
-- 🗑️ Safe branch deletion with multi-select
+- 🗑️ Safe branch deletion with multi-select, local and remote
 - 📅 Branches sorted by commit date (most recent first)
 - 🎨 Colorized output for better readability
 - ⚡ Fast and lightweight
-- 🛡️ Safety features (prevents remote branch deletion)
+- 🛡️ Safety features (confirmation prompt before deleting remote branches)
 - 🔧 Two convenient commands: `git-branch-switcher` and `br`
 
 ## Installation
@@ -72,13 +72,29 @@ git-branch-switcher --delete-force
 br -D
 ```
 
-Select multiple local branches to delete. Remote branch deletion is blocked for safety.
+Select multiple local branches to delete.
+
+### Delete remote branches
+
+```bash
+git-branch-switcher --remote --delete
+# or
+br -r -d
+
+# Force delete (skips the confirmation prompt)
+br -r -D
+```
+
+Select multiple remote branches to delete. This runs `git push <remote> --delete` under the hood, so it's a real, hard-to-undo operation — you'll be asked to confirm unless you pass `-D`. The remote is auto-detected (your only remote, or `origin` if you have several); if neither applies, the command will tell you it can't determine which remote to use.
 
 ### Combine options
 
 ```bash
 # Search through remote branches
 br --remote --search
+
+# Search, then pick which local branches to delete
+br --search --delete
 
 # All available combinations work together
 ```
@@ -91,15 +107,15 @@ git-branch-switcher [options]
 Options:
   -r, --remote          Work with remote branches instead of local ones
   -s, --search          Use search interface for branch filtering
-  -d, --delete          Delete selected branches (local only)
-  -D, --delete-force    Force delete selected branches (local only)
+  -d, --delete          Delete selected branches (asks for confirmation on remote)
+  -D, --delete-force    Force delete selected branches (skips the merge check locally, and the confirmation prompt on remote)
   -h, --help            Show help
   -v, --version         Show version number
 ```
 
 ## Requirements
 
-- Node.js 18 or higher (22.3.0 recommended - see .nvmrc)
+- Node.js 20+ or 22+ (see .nvmrc for the version used in CI)
 - Git installed and configured
 - A git repository (local or cloned)
 
