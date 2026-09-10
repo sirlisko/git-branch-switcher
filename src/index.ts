@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { checkbox, search, select } from "@inquirer/prompts";
+import { checkbox, input, search, select } from "@inquirer/prompts";
 import chalk from "chalk";
 import { type SimpleGit, simpleGit } from "simple-git";
 import yargs from "yargs";
@@ -45,7 +45,14 @@ async function switchBranch(
 				return;
 			}
 
-			const deletable = branches.filter((branch) => branch !== currentBranch);
+			let deletable = branches.filter((branch) => branch !== currentBranch);
+
+			if (argv.search) {
+				const term = await input({ message: "Search branches:" });
+				if (term) {
+					deletable = deletable.filter((branch) => branch.includes(term));
+				}
+			}
 
 			if (deletable.length === 0) {
 				console.log(chalk.yellow("No branches available to delete."));
