@@ -1,12 +1,26 @@
 #!/usr/bin/env node
 
-import { checkbox, input, search, select } from "@inquirer/prompts";
+import { checkbox, confirm, input, search, select } from "@inquirer/prompts";
 import chalk from "chalk";
 import { type SimpleGit, simpleGit } from "simple-git";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
 const git: SimpleGit = simpleGit();
+
+async function getRemoteName(): Promise<string> {
+	const remotes = await git.getRemotes();
+	if (remotes.length === 1) {
+		return remotes[0].name;
+	}
+	const origin = remotes.find((remote) => remote.name === "origin");
+	if (origin) {
+		return origin.name;
+	}
+	throw new Error(
+		`Multiple remotes found (${remotes.map((remote) => remote.name).join(", ")}); unable to determine which to delete from.`,
+	);
+}
 
 async function switchBranch(
 	argv: yargs.Arguments<{
@@ -19,13 +33,17 @@ async function switchBranch(
 	const branchType = argv.remote ? "remote" : "local";
 	try {
 		let branches: string[];
-		let currentBranch: string | undefined;
+		let currentBranch: string;
 
 		if (argv.remote) {
-			const summary = await git.branch(["-r", "--sort=-committerdate"]);
-			branches = summary.all
+			const [remoteSummary, localSummary] = await Promise.all([
+				git.branch(["-r", "--sort=-committerdate"]),
+				git.branch(),
+			]);
+			branches = remoteSummary.all
 				.filter((branch) => !branch.includes("->"))
 				.map((branch) => branch.replace(/^[^/]+\//, ""));
+			currentBranch = localSummary.current;
 		} else {
 			const summary = await git.branch(["--sort=-committerdate"]);
 			branches = summary.all;
@@ -38,13 +56,6 @@ async function switchBranch(
 		}
 
 		if (argv.delete || argv.deleteForce) {
-			if (argv.remote) {
-				console.error(
-					chalk.redBright("Deleting remote branches is not supported yet."),
-				);
-				return;
-			}
-
 			let deletable = branches.filter((branch) => branch !== currentBranch);
 
 			if (argv.search) {
@@ -66,6 +77,29 @@ async function switchBranch(
 
 			if (selectedBranches.length === 0) {
 				console.log(chalk.yellow("No branches selected for deletion."));
+				return;
+			}
+
+			if (argv.remote) {
+				const confirmed =
+					argv.deleteForce ||
+					(await confirm({
+						message: `Delete ${selectedBranches.length} remote branch${selectedBranches.length === 1 ? "" : "es"} (${selectedBranches.join(", ")})? This cannot be undone.`,
+						default: false,
+					}));
+
+				if (!confirmed) {
+					console.log(chalk.yellow("Aborted."));
+					return;
+				}
+
+				const remoteName = await getRemoteName();
+				await git.push([remoteName, "--delete", ...selectedBranches]);
+				console.log(
+					chalk.greenBright(
+						`Deleted ${selectedBranches.length} remote branch${selectedBranches.length === 1 ? "" : "es"} from '${remoteName}': ${selectedBranches.join(", ")}`,
+					),
+				);
 				return;
 			}
 
