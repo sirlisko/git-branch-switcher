@@ -22,6 +22,23 @@ async function getRemoteName(): Promise<string> {
 	);
 }
 
+// simple-git throws for a single unmerged branch but silently resolves for a
+// batch, so verify against the actual branch list instead of trusting either.
+async function deleteLocalBranches(
+	branches: string[],
+	force: boolean,
+): Promise<string[]> {
+	try {
+		await git.deleteLocalBranches(branches, force);
+	} catch (error) {
+		if (!(error instanceof Error && /not fully merged/.test(error.message))) {
+			throw error;
+		}
+	}
+	const remaining = new Set((await git.branchLocal()).all);
+	return branches.filter((branch) => remaining.has(branch));
+}
+
 async function switchBranch(
 	argv: yargs.Arguments<{
 		remote?: boolean;
@@ -117,36 +134,34 @@ async function switchBranch(
 				return;
 			}
 
-			try {
-				await git.deleteLocalBranches(selectedBranches, argv.deleteForce);
-			} catch (deleteError) {
-				const notMerged =
-					!argv.deleteForce &&
-					deleteError instanceof Error &&
-					/not fully merged/.test(deleteError.message);
+			let failed = await deleteLocalBranches(
+				selectedBranches,
+				Boolean(argv.deleteForce),
+			);
 
-				if (!notMerged) {
-					throw deleteError;
-				}
-
+			if (failed.length > 0 && !argv.deleteForce) {
 				const forceConfirmed = await confirm({
-					message: `${selectedBranches.length === 1 ? "That branch is" : "Some of those branches are"} not fully merged. Force delete anyway?`,
+					message: `Not fully merged: ${failed.join(", ")}. Force delete anyway?`,
 					default: false,
 				});
-
-				if (!forceConfirmed) {
-					console.log(chalk.yellow("Aborted."));
-					return;
+				if (forceConfirmed) {
+					failed = await deleteLocalBranches(failed, true);
 				}
-
-				await git.deleteLocalBranches(selectedBranches, true);
 			}
 
-			console.log(
-				chalk.greenBright(
-					`Deleted ${selectedBranches.length} branch${selectedBranches.length === 1 ? "" : "es"}: ${selectedBranches.join(", ")}`,
-				),
+			const deleted = selectedBranches.filter(
+				(branch) => !failed.includes(branch),
 			);
+			if (deleted.length > 0) {
+				console.log(
+					chalk.greenBright(
+						`Deleted ${deleted.length} branch${deleted.length === 1 ? "" : "es"}: ${deleted.join(", ")}`,
+					),
+				);
+			}
+			if (failed.length > 0) {
+				console.log(chalk.yellow(`Not deleted: ${failed.join(", ")}`));
+			}
 			return;
 		}
 
